@@ -2,7 +2,10 @@ import { useState, useMemo } from 'react';
 import SpeedometerTimer from './SpeedometerTimer';
 import HeatMap from './HeatMap';
 import { useFokus } from '@/store/FokusContext';
-import { Play, Search, Plus } from 'lucide-react';
+import { Play, Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 
 export default function Dashboard() {
   const { state, addTask, addActivity, startSession } = useFokus();
@@ -13,20 +16,11 @@ export default function Dashboard() {
   const [isAddingCustom, setIsAddingCustom] = useState(false);
   const [customVal, setCustomVal] = useState('');
 
-  const topActivities = state.activities.slice(0, 3);
-  
   const DEFAULT_PRESETS = [5, 10, 25];
   const allPresets = [...DEFAULT_PRESETS, ...customPresets];
 
   const handleTogglePreset = (mins: number) => {
     setTargetMins(targetMins === mins ? null : mins);
-  };
-
-  const getThemeClass = (active: boolean) => {
-    if (!active) return 'bg-app-dark/40 text-app-secondary border-app-subtle hover:text-app-primary hover:bg-app-dark/80';
-    if (state.theme === 'paper') return 'bg-app-accent text-white border-app-accent shadow-xl shadow-app-accent/20 scale-105';
-    if (state.theme === 'obsidian') return 'bg-white text-black border-white shadow-xl shadow-white/20 scale-105';
-    return 'bg-app-accent text-white border-app-accent shadow-xl shadow-app-accent/20 scale-105';
   };
 
   const handleAddCustom = () => {
@@ -46,8 +40,7 @@ export default function Dashboard() {
     setCustomPresets(prev => prev.filter(p => p !== mins));
     if (targetMins === mins) setTargetMins(null);
   };
-  
-  // Set default activity if not set
+
   useMemo(() => {
     if (!selectedActivityId && state.activities.length > 0) {
       setSelectedActivityId(state.activities[0].id);
@@ -59,7 +52,6 @@ export default function Dashboard() {
 
     let activityId = selectedActivityId;
 
-    // Cold Start: Auto-create "Others" activity if nothing is selected
     if (!activityId) {
       const existingOthers = state.activities.find(a => a.name === 'Others');
       if (existingOthers) {
@@ -76,10 +68,9 @@ export default function Dashboard() {
         activityId = othersId;
       }
     }
-    
-    // Check if task already exists
-    let task = state.tasks.find(t => 
-      t.title.toLowerCase() === taskTitle.trim().toLowerCase() && 
+
+    let task = state.tasks.find(t =>
+      t.title.toLowerCase() === taskTitle.trim().toLowerCase() &&
       t.activityId === activityId
     );
 
@@ -101,7 +92,6 @@ export default function Dashboard() {
   };
 
   const recentTasks = useMemo(() => {
-    // Get unique tasks from recent sessions
     const taskIds = new Set();
     return state.sessions
       .filter(s => s.status === 'completed')
@@ -114,138 +104,115 @@ export default function Dashboard() {
         }
         return false;
       })
-      .slice(0, 3);
+      .slice(0, 5);
   }, [state.sessions, state.tasks]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-160px)] py-12">
-      <div className="w-full max-w-3xl bg-app-card rounded-[3rem] border border-app-subtle p-8 sm:p-12 shadow-fokus flex flex-col items-center transition-all duration-500">
-        
-        {/* Top Section: Timer */}
-        <div className="w-full flex justify-center mb-8">
-          <SpeedometerTimer />
-        </div>
+    <>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-160px)] max-w-lg mx-auto py-12">
+        <SpeedometerTimer />
 
-        {/* Quick Start Input or Active Session Meta */}
-        <div className="w-full max-w-md mb-12">
+        <div className="w-full mt-8 space-y-5">
           {!state.activeSession ? (
-            <div className="space-y-6">
-              {/* Duration Presets (Toggles) */}
-              <div className="flex flex-col items-center gap-4 pb-1">
-                <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide w-full">
-                  {allPresets.map(mins => (
-                    <div key={mins} className="relative group shrink-0">
+            <>
+              <div className="flex items-center justify-center gap-1.5">
+                {allPresets.map(mins => (
+                  <div key={mins} className="relative group">
+                    <Button
+                      onClick={() => handleTogglePreset(mins)}
+                      variant={targetMins === mins ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs px-3"
+                    >
+                      {mins}m
+                    </Button>
+                    {!DEFAULT_PRESETS.includes(mins) && (
                       <button
-                        onClick={() => handleTogglePreset(mins)}
-                        className={`px-5 py-2.5 rounded-2xl text-[10px] font-extrabold uppercase tracking-[0.15em] border transition-all ${getThemeClass(targetMins === mins)}`}
+                        onClick={(e) => removePreset(e, mins)}
+                        className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-background text-muted-foreground hover:text-foreground border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        {mins}m
+                        <X className="w-2 h-2" />
                       </button>
-                      {!DEFAULT_PRESETS.includes(mins) && (
-                        <button
-                          onClick={(e) => removePreset(e, mins)}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-app-card text-app-secondary hover:text-rose-500 border border-app-subtle flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xl"
-                        >
-                          <span className="text-[12px] font-bold leading-none">×</span>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  
-                  <button
-                    onClick={() => setIsAddingCustom(true)}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-app-dark/50 text-app-secondary border border-app-subtle hover:text-app-primary hover:bg-app-dark transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  onClick={() => setIsAddingCustom(true)}
+                  variant="outline"
+                  size="icon"
+                  className="w-8 h-8"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
 
-              {/* Custom Duration Modal */}
-              {isAddingCustom && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                  {/* Backdrop */}
-                  <div 
-                    className="absolute inset-0 bg-app-dark/80 backdrop-blur-sm animate-in fade-in duration-300"
-                    onClick={() => setIsAddingCustom(false)}
-                  />
-                  
-                  {/* Modal Card */}
-                  <div className="relative w-full max-w-sm bg-app-card border border-app-subtle rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-                    <div className="text-center mb-8">
-                      <h3 className="text-lg font-bold text-app-primary">Custom Duration</h3>
-                      <p className="text-xs text-app-secondary uppercase tracking-widest font-bold mt-1">Minutes to Focus</p>
+              <Dialog open={isAddingCustom} onOpenChange={setIsAddingCustom}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Custom Duration</DialogTitle>
+                    <DialogDescription>Set your focus session length</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-6">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="00"
+                        autoFocus
+                        value={customVal}
+                        onChange={(e) => setCustomVal(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddCustom();
+                          if (e.key === 'Escape') setIsAddingCustom(false);
+                        }}
+                        className="w-full bg-background border border-input rounded-md py-5 text-center text-3xl font-mono font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/20"
+                      />
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium pointer-events-none">
+                        MIN
+                      </div>
                     </div>
-
-                    <div className="flex flex-col gap-6">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          placeholder="00"
-                          autoFocus
-                          value={customVal}
-                          onChange={(e) => setCustomVal(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAddCustom();
-                            if (e.key === 'Escape') setIsAddingCustom(false);
-                          }}
-                          className="w-full bg-app-dark border border-app-subtle rounded-2xl py-6 text-center text-5xl font-mono font-bold text-app-primary focus:outline-none focus:ring-2 focus:ring-app-accent/50 placeholder:text-app-secondary/20"
-                        />
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-app-secondary font-bold uppercase text-[10px] tracking-widest pointer-events-none">
-                          MIN
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setIsAddingCustom(false)}
-                          className="flex-1 py-4 rounded-xl bg-app-dark text-app-secondary font-bold text-xs uppercase tracking-widest hover:bg-app-dark/80 border border-app-subtle transition-all"
-                        >
+                    <div className="flex gap-3">
+                      <DialogClose asChild>
+                        <Button variant="outline" className="flex-1">
                           Cancel
-                        </button>
-                        <button
-                          onClick={handleAddCustom}
-                          className="flex-1 py-4 rounded-xl bg-app-accent text-white font-bold text-xs uppercase tracking-widest hover:opacity-90 shadow-lg shadow-app-accent/20 transition-all"
-                        >
-                          Set Timer
-                        </button>
-                      </div>
+                        </Button>
+                      </DialogClose>
+                      <Button onClick={handleAddCustom} className="flex-[2]">
+                        Set
+                      </Button>
                     </div>
                   </div>
-                </div>
-              )}
+                </DialogContent>
+              </Dialog>
 
-              {/* Task Input */}
-              <div className="relative group">
-                <input
+              <div className="relative">
+                <Input
                   type="text"
                   placeholder="What's your focus?"
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleQuickStart()}
-                  className="w-full bg-app-dark/50 border border-app-subtle rounded-[1.25rem] py-5 pl-12 pr-16 text-sm text-app-primary focus:outline-none focus:ring-2 focus:ring-app-accent/50 placeholder:text-app-secondary transition-all shadow-inner"
+                  className="pr-14 h-11 text-sm"
                 />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-app-secondary group-focus-within:text-app-accent transition-colors" />
-                <button
+                <Button
                   onClick={handleQuickStart}
                   disabled={!taskTitle.trim()}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-2xl bg-app-accent text-white flex items-center justify-center hover:opacity-90 disabled:opacity-30 transition-all active:scale-95 shadow-lg shadow-app-accent/20"
+                  size="icon"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8"
                 >
-                  <Play className="w-5 h-5 fill-current" />
-                </button>
+                  <Play className="w-4 h-4" />
+                </Button>
               </div>
 
-              {/* Quick Activity Tags (Below input) */}
-              <div className="flex flex-col gap-3 pt-1">
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
                   {state.activities.map(activity => (
                     <button
                       key={activity.id}
                       onClick={() => setSelectedActivityId(activity.id)}
-                      className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all ${
+                      className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                         selectedActivityId === activity.id
-                          ? 'bg-app-accent/10 border-app-accent/50 text-app-accent'
-                          : 'bg-app-dark/5 border-app-subtle text-app-secondary hover:bg-app-dark/10'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {activity.icon} {activity.name}
@@ -254,8 +221,7 @@ export default function Dashboard() {
                 </div>
 
                 {recentTasks.length > 0 && (
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pt-1">
-                    <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold shrink-0 mr-1">Recent:</span>
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
                     {recentTasks.map(task => (
                       <button
                         key={task.id}
@@ -263,7 +229,7 @@ export default function Dashboard() {
                           setTaskTitle(task.title);
                           setSelectedActivityId(task.activityId);
                         }}
-                        className="shrink-0 px-2.5 py-1 rounded-lg bg-zinc-800/50 text-zinc-400 text-[10px] hover:text-zinc-200 transition-colors border border-white/5"
+                        className="shrink-0 px-2 py-0.5 rounded text-xs text-muted-foreground hover:text-foreground bg-muted/40 transition-colors"
                       >
                         {task.title}
                       </button>
@@ -271,55 +237,24 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-700">
-               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                  Currently Focusing
-               </div>
-               <p className="mt-3 text-zinc-400 text-sm font-medium">
+            <div className="text-center animate-fade-in">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-xs text-primary font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
+                Focusing now
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {state.tasks.find(t => t.id === state.activeSession?.taskId)?.title}
-               </p>
+              </p>
             </div>
           )}
         </div>
 
-        {/* Middle Section: Heat Map */}
-        <div className="w-full flex justify-center">
+        <div className="w-full mt-10">
           <HeatMap />
         </div>
-
-        {/* Bottom Section: Legend */}
-        <div className="flex flex-wrap items-center justify-center gap-6 mt-12 pt-8 border-t border-white/5">
-          {topActivities.length > 0 ? (
-            topActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center gap-2">
-                <div 
-                  className="w-2.5 h-2.5 rounded-full" 
-                  style={{ backgroundColor: activity.color }}
-                />
-                <span className="text-[12px] font-medium text-zinc-400">{activity.name}</span>
-              </div>
-            ))
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="text-[12px] font-medium text-zinc-400">Coding</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                <span className="text-[12px] font-medium text-zinc-400">Reading</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
-                <span className="text-[12px] font-medium text-zinc-400">Exercise</span>
-              </div>
-            </>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   );
 }

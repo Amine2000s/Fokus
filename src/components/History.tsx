@@ -1,13 +1,16 @@
 import { useMemo, useState, useRef } from 'react';
-import { Trash2, Calendar, Download, Upload, ShieldCheck, Database } from 'lucide-react';
+import { Trash2, Download, Upload, ShieldCheck } from 'lucide-react';
 import { useFokus } from '@/store/FokusContext';
 import { formatDuration } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function History() {
   const { state, deleteSession, dispatch } = useFokus();
   const [filter, setFilter] = useState<'all' | string>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const handleExport = () => {
     const now = new Date().toISOString();
     const backup = {
@@ -40,12 +43,11 @@ export default function History() {
         }
 
         if (confirm('Importing will overwrite current data. Are you sure?')) {
-          // Clear and rewrite DB (Direct IndexedDB access for bulk import)
           const request = indexedDB.open('fokus-db', 1);
           request.onsuccess = (event: any) => {
             const db = event.target.result;
             const tx = db.transaction(['activities', 'tasks', 'sessions'], 'readwrite');
-            
+
             tx.objectStore('activities').clear();
             tx.objectStore('tasks').clear();
             tx.objectStore('sessions').clear();
@@ -78,7 +80,6 @@ export default function History() {
     return sessions;
   }, [state.sessions, filter]);
 
-  // Group by date
   const groupedSessions = useMemo(() => {
     const groups: Record<string, typeof completedSessions> = {};
     for (const session of completedSessions) {
@@ -104,140 +105,113 @@ export default function History() {
     return new Date(isoString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const totalFocusTime = useMemo(() => {
+    return completedSessions.reduce((sum, s) => sum + s.duration, 0);
+  }, [completedSessions]);
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between px-2">
-        <div>
-          <h2 className="text-4xl font-serif text-app-primary">Sync</h2>
-          <p className="text-xs text-app-secondary uppercase tracking-[0.2em] font-bold mt-2">
-            Manage your local data & history
-          </p>
-        </div>
+    <div className="max-w-xl mx-auto space-y-8 pb-12">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">History</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {formatDuration(totalFocusTime)} across {completedSessions.length} session{completedSessions.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
-      {/* Backup Card */}
-      <div className="bg-app-card rounded-[2.5rem] border border-app-subtle p-8 shadow-fokus">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-app-primary">Backup & Restore</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs text-app-secondary font-medium">Portable JSON backup</p>
-              {state.lastBackupAt && (
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                  Last: {new Date(state.lastBackupAt).toLocaleDateString()}
-                </span>
-              )}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <CardTitle className="text-sm">Backup & Restore</CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                {state.lastBackupAt
+                  ? `Last backup: ${new Date(state.lastBackupAt).toLocaleDateString()}`
+                  : 'Portable JSON backup'}
+              </CardDescription>
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button 
-            onClick={handleExport}
-            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-app-dark border border-app-subtle text-app-primary hover:bg-app-dark/80 transition-all font-bold text-xs uppercase tracking-widest"
-          >
-            <Download className="w-4 h-4" />
-            Export Backup
-          </button>
-          
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-app-accent text-white shadow-lg shadow-app-accent/20 hover:opacity-90 transition-all font-bold text-xs uppercase tracking-widest"
-          >
-            <Upload className="w-4 h-4" />
-            Import Backup
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-            accept=".json" 
-            className="hidden" 
-          />
-        </div>
-      </div>
-
-      {/* History Log */}
-      <div className="pt-4 space-y-6">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-app-secondary" />
-            <h3 className="text-sm font-bold text-app-secondary uppercase tracking-widest">Focus Log</h3>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+            <Button size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-4 h-4" />
+              Import
+            </Button>
+            <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
           </div>
-          
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="bg-app-dark/50 border border-app-subtle px-3 py-1.5 rounded-xl text-[11px] font-bold text-app-primary focus:outline-none focus:ring-2 focus:ring-app-accent/50 appearance-none min-w-[140px] text-center"
-          >
-            <option value="all">All Activities</option>
-            {state.activities.map(a => (
-              <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
-            ))}
-          </select>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Session Log</h3>
+          <Select value={filter} onValueChange={(value) => setFilter(value)}>
+            <SelectTrigger className="w-[140px] h-7 text-xs">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {state.activities.map(a => (
+                <SelectItem key={a.id} value={a.id}>{a.icon} {a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {groupedSessions.length === 0 && (
-          <div className="text-center py-20 bg-app-card rounded-[2.5rem] border border-app-subtle">
-            <div className="text-4xl mb-4">📋</div>
-            <p className="text-app-secondary text-sm font-medium">No focus history found.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-sm text-muted-foreground">No sessions recorded yet.</p>
           </div>
         )}
 
-        <div className="space-y-8">
+        <div className="space-y-5">
           {groupedSessions.map(([date, sessions]) => {
             const dayTotal = sessions.reduce((sum, s) => sum + s.duration, 0);
             return (
-              <div key={date} className="space-y-3">
-                <div className="flex items-center justify-between px-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-app-secondary uppercase tracking-widest">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {formatDate(date)}
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-app-secondary bg-app-dark px-2 py-1 rounded-lg">
-                    {formatDuration(dayTotal)}
-                  </span>
+              <div key={date} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">{formatDate(date)}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground">{formatDuration(dayTotal)}</span>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {sessions.map(session => {
                     const task = state.tasks.find(t => t.id === session.taskId);
                     const activity = state.activities.find(a => a.id === session.activityId);
                     return (
                       <div
                         key={session.id}
-                        className="flex items-center gap-4 bg-app-card rounded-2xl px-5 py-4 border border-app-subtle shadow-sm hover:shadow-md transition-all group"
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-muted/30 transition-colors group"
                       >
                         <div
-                          className="w-1.5 h-10 rounded-full shrink-0"
-                          style={{ backgroundColor: activity?.color || 'var(--accent-primary)' }}
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: activity?.color || 'var(--primary)' }}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-app-primary truncate">
-                            {task?.title || 'Deleted task'}
+                          <p className="text-sm text-foreground truncate leading-snug">
+                            {task?.title || <span className="italic text-muted-foreground">Deleted task</span>}
                           </p>
-                          <p className="text-[11px] text-app-secondary mt-0.5 font-bold uppercase tracking-wide">
-                            {activity?.icon} {activity?.name || 'Unknown'} • {formatTimeOfDay(session.startTime)}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-mono font-bold text-app-primary">
-                            {formatDuration(session.duration)}
+                          <p className="text-[10px] text-muted-foreground">
+                            {activity?.icon} {activity?.name || 'Unknown'} &middot; {formatTimeOfDay(session.startTime)}
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (confirm('Delete this session?')) {
-                              deleteSession(session.id);
-                            }
-                          }}
-                          className="p-2.5 rounded-xl text-app-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-all shrink-0 sm:opacity-0 group-hover:opacity-100"
+                        <span className="text-xs font-mono text-muted-foreground shrink-0 mr-1">
+                          {formatDuration(session.duration)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => { if (confirm('Delete this session?')) deleteSession(session.id) }}
+                          className="w-6 h-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     );
                   })}

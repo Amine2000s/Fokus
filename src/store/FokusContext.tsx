@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { Activity, Task, FocusSession, View, Theme } from '@/types';
 import * as db from '@/lib/db';
+import { playStartChime, playEndChime, sendNotification, requestNotificationPermission } from '@/lib/sounds';
 
 interface State {
   activities: Activity[];
@@ -14,6 +15,7 @@ interface State {
   pauseOffset: number; // seconds spent paused
   pauseStartTime: number | null;
   loading: boolean;
+  soundEnabled: boolean;
 }
 
 type Action =
@@ -32,7 +34,8 @@ type Action =
   | { type: 'UPDATE_SESSION'; payload: FocusSession }
   | { type: 'SET_ACTIVE_SESSION'; payload: FocusSession | null }
   | { type: 'SET_PAUSED'; payload: boolean }
-  | { type: 'DELETE_SESSION'; payload: string };
+  | { type: 'DELETE_SESSION'; payload: string }
+  | { type: 'SET_SOUND_ENABLED'; payload: boolean };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -84,6 +87,9 @@ function reducer(state: State, action: Action): State {
       }
     case 'DELETE_SESSION':
       return { ...state, sessions: state.sessions.filter(s => s.id !== action.payload) };
+    case 'SET_SOUND_ENABLED':
+      localStorage.setItem('fokus-sound', JSON.stringify(action.payload));
+      return { ...state, soundEnabled: action.payload };
     default:
       return state;
   }
@@ -101,6 +107,7 @@ const initialState: State = {
   pauseOffset: 0,
   pauseStartTime: null,
   loading: true,
+  soundEnabled: localStorage.getItem('fokus-sound') === null ? true : JSON.parse(localStorage.getItem('fokus-sound')!),
 };
 
 interface ContextType {
@@ -117,6 +124,7 @@ interface ContextType {
   completeSession: (session: FocusSession) => Promise<void>;
   cancelSession: () => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
+  toggleSound: () => void;
 }
 
 const FokusContext = createContext<ContextType | null>(null);
@@ -143,6 +151,7 @@ export function FokusProvider({ children }: { children: ReactNode }) {
       }
     }
     loadData();
+    requestNotificationPermission();
   }, []);
 
   const addActivity = useCallback(async (activity: Activity) => {
@@ -191,8 +200,12 @@ export function FokusProvider({ children }: { children: ReactNode }) {
     await db.addSession(session);
     dispatch({ type: 'ADD_SESSION', payload: session });
     dispatch({ type: 'SET_ACTIVE_SESSION', payload: session });
+    if (state.soundEnabled) {
+      playStartChime();
+      sendNotification('Fokus', 'Session started');
+    }
     return session;
-  }, []);
+  }, [state.soundEnabled]);
 
   const togglePause = useCallback(() => {
     dispatch({ type: 'SET_PAUSED', payload: !state.isPaused });
@@ -201,16 +214,21 @@ export function FokusProvider({ children }: { children: ReactNode }) {
   const completeSession = useCallback(async (session: FocusSession) => {
     const now = new Date();
     const totalPauseTime = state.pauseOffset + (state.isPaused && state.pauseStartTime ? Math.floor((Date.now() - state.pauseStartTime) / 1000) : 0);
+    const elapsed = Math.max(0, Math.floor((now.getTime() - new Date(session.startTime).getTime()) / 1000) - totalPauseTime);
     const updated: FocusSession = {
       ...session,
       endTime: now.toISOString(),
-      duration: Math.max(0, Math.floor((now.getTime() - new Date(session.startTime).getTime()) / 1000) - totalPauseTime),
+      duration: session.targetDuration ? Math.min(elapsed, session.targetDuration) : elapsed,
       status: 'completed',
     };
     await db.updateSession(updated);
     dispatch({ type: 'UPDATE_SESSION', payload: updated });
     dispatch({ type: 'SET_ACTIVE_SESSION', payload: null });
-  }, [state.isPaused, state.pauseStartTime, state.pauseOffset]);
+    if (state.soundEnabled) {
+      playEndChime();
+      sendNotification('Fokus', 'Session completed');
+    }
+  }, [state.isPaused, state.pauseStartTime, state.pauseOffset, state.soundEnabled]);
 
   const cancelSession = useCallback(async () => {
     if (state.activeSession) {
@@ -231,6 +249,10 @@ export function FokusProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_SESSION', payload: id });
   }, []);
 
+  const toggleSound = useCallback(() => {
+    dispatch({ type: 'SET_SOUND_ENABLED', payload: !state.soundEnabled });
+  }, [state.soundEnabled]);
+
   return (
     <FokusContext.Provider value={{
       state,
@@ -246,6 +268,7 @@ export function FokusProvider({ children }: { children: ReactNode }) {
       completeSession,
       cancelSession,
       deleteSession,
+      toggleSound,
     }}>
       {children}
     </FokusContext.Provider>
