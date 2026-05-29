@@ -135,11 +135,17 @@ export function FokusProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadData() {
       try {
-        const [activities, tasks, sessions] = await Promise.all([
+        let [activities, tasks, sessions] = await Promise.all([
           db.getAllActivities(),
           db.getAllTasks(),
           db.getAllSessions(),
         ]);
+        tasks = tasks.map(t => ({
+          ...t,
+          description: t.description ?? '',
+          board: t.board ?? 'todo',
+          sortOrder: t.sortOrder ?? Date.now(),
+        }));
         const activeSession = sessions.find(s => s.status === 'active') || null;
         dispatch({ type: 'SET_DATA', payload: { activities, tasks, sessions } });
         if (activeSession) {
@@ -204,8 +210,16 @@ export function FokusProvider({ children }: { children: ReactNode }) {
       playStartChime();
       sendNotification('Fokus', 'Session started');
     }
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task && task.board !== 'in-progress') {
+      const maxOrder = state.tasks
+        .filter(t => t.board === 'in-progress')
+        .reduce((max, t) => Math.max(max, t.sortOrder || 0), -1);
+      await db.updateTask({ ...task, board: 'in-progress', sortOrder: maxOrder + 1 });
+      dispatch({ type: 'UPDATE_TASK', payload: { ...task, board: 'in-progress', sortOrder: maxOrder + 1 } });
+    }
     return session;
-  }, [state.soundEnabled]);
+  }, [state.soundEnabled, state.tasks]);
 
   const togglePause = useCallback(() => {
     dispatch({ type: 'SET_PAUSED', payload: !state.isPaused });

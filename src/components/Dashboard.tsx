@@ -75,12 +75,18 @@ export default function Dashboard() {
     );
 
     if (!task) {
+      const maxOrder = state.tasks
+        .filter(t => t.board === 'in-progress')
+        .reduce((max, t) => Math.max(max, t.sortOrder || 0), -1);
       const newTask = {
         id: crypto.randomUUID(),
         activityId,
         title: taskTitle.trim(),
+        description: '',
         completed: false,
         createdAt: new Date().toISOString(),
+        board: 'in-progress' as const,
+        sortOrder: maxOrder + 1,
       };
       await addTask(newTask);
       task = newTask;

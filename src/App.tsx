@@ -132,8 +132,8 @@ function AppContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
-        <div className="animate-fade-in" key={state.currentView}>
+      <main className={`flex-1 w-full ${state.currentView === 'timer' ? 'flex flex-col overflow-hidden px-6 pb-8' : 'max-w-6xl mx-auto px-6 py-8'}`}>
+        <div className={state.currentView === 'timer' ? 'flex-1 flex flex-col overflow-hidden' : 'animate-fade-in'} key={state.currentView}>
           {state.currentView === 'dashboard' && <Dashboard />}
           {state.currentView === 'timer' && <Backlog />}
           {state.currentView === 'activities' && <ActivityManager />}

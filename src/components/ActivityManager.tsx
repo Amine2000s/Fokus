@@ -93,13 +93,19 @@ export default function ActivityManager() {
 
   const handleAddTask = async (activityId: string) => {
     if (!newTaskTitle.trim()) return;
-    const task: Task = {
-      id: crypto.randomUUID(),
-      activityId,
-      title: newTaskTitle.trim(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
+      const maxOrder = state.tasks
+        .filter(t => t.board === 'todo')
+        .reduce((max, t) => Math.max(max, t.sortOrder || 0), -1);
+      const task: Task = {
+        id: crypto.randomUUID(),
+        activityId,
+        title: newTaskTitle.trim(),
+        description: '',
+        completed: false,
+        createdAt: new Date().toISOString(),
+        board: 'todo',
+        sortOrder: maxOrder + 1,
+      };
     await addTask(task);
     setNewTaskTitle('');
     setAddingTaskFor(null);
