@@ -55,31 +55,25 @@ export default function HeatMap() {
 
   function getColor(minutes: number): string {
     if (minutes === 0) return 'var(--cell-empty)';
-    const ratio = minutes / 120; // 120 mins as max for scaling
-    if (ratio <= 0.25) return '#3b82f630';
-    if (ratio <= 0.5) return '#3b82f660';
-    if (ratio <= 0.75) return '#3b82f6a0';
-    return '#3b82f6';
+    const ratio = minutes / 120;
+    if (ratio <= 0.25) return 'var(--heat-1)';
+    if (ratio <= 0.5) return 'var(--heat-2)';
+    if (ratio <= 0.75) return 'var(--heat-3)';
+    return 'var(--heat-4)';
   }
-
-  const totalMinutesLast4Months = useMemo(() => {
-    return grid.flat().reduce((sum, d) => sum + (d?.minutes || 0), 0);
-  }, [grid]);
 
   return (
     <div className="w-full select-none flex flex-col items-center">
-      <div className="w-full overflow-x-auto pb-6 scrollbar-hide flex justify-center">
-        {/* Grid Container */}
-        <div className="relative inline-block w-[336px]">
-          {/* Month labels */}
-          <div className="flex gap-[3px] mb-4 relative h-4 w-full">
+      <div className="overflow-x-auto pb-4 scrollbar-hide flex justify-center">
+        <div className="relative inline-block w-[308px]">
+          <div className="flex gap-[2px] mb-3 relative h-3 w-full">
             {monthLabels.slice(-4).map((m, i) => {
-              const leftPos = (m.col - (grid.length - 20)) * 17;
+              const leftPos = (m.col - (grid.length - 20)) * 15.5;
               if (leftPos < 0) return null;
               return (
                 <div
                   key={i}
-                  className="text-[11px] font-medium text-zinc-400 absolute whitespace-nowrap"
+                  className="text-[9px] font-medium text-muted-foreground absolute whitespace-nowrap"
                   style={{ left: leftPos }}
                 >
                   {m.label}
@@ -87,21 +81,20 @@ export default function HeatMap() {
               );
             })}
           </div>
-          {/* Cells */}
-          <div className="flex gap-[4px]">
+          <div className="flex gap-[2px]">
             {grid.slice(-20).map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[4px]">
+              <div key={wi} className="flex flex-col gap-[2px]">
                 {Array.from({ length: 7 }).map((_, di) => {
                   const cell = week.find(d => d.dayOfWeek === di);
-                  if (!cell) return <div key={di} className="w-[13px] h-[13px]" />;
+                  if (!cell) return <div key={di} className="w-[10px] h-[10px]" />;
                   return (
                     <div
                       key={di}
-                      className="w-[13px] h-[13px] rounded-[2px] transition-colors cursor-pointer group relative"
+                      className="w-[10px] h-[10px] rounded-[1px] transition-colors cursor-default group relative"
                       style={{ backgroundColor: getColor(cell.minutes) }}
                     >
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 shadow-xl border border-white/10">
-                        {cell.minutes}m • {cell.date}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-foreground text-background text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity leading-none">
+                        {cell.minutes}m &middot; {cell.date}
                       </div>
                     </div>
                   );
@@ -111,24 +104,17 @@ export default function HeatMap() {
           </div>
         </div>
       </div>
-      
-      {/* Footer Info */}
-      <div className="w-full max-w-[340px] flex flex-col items-center gap-4 border-t border-white/5 pt-4 mt-2">
-        <div className="text-[11px] text-zinc-500 text-center">
-          <span className="text-zinc-300 font-bold">{totalMinutesLast4Months}</span> total minutes focused in the last 4 months
+
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <span>Less</span>
+        <div className="flex gap-[2px]">
+          <div className="w-2.5 h-2.5 rounded-[1px]" style={{ backgroundColor: 'var(--cell-empty)' }} />
+          <div className="w-2.5 h-2.5 rounded-[1px]" style={{ backgroundColor: 'var(--heat-1)' }} />
+          <div className="w-2.5 h-2.5 rounded-[1px]" style={{ backgroundColor: 'var(--heat-2)' }} />
+          <div className="w-2.5 h-2.5 rounded-[1px]" style={{ backgroundColor: 'var(--heat-3)' }} />
+          <div className="w-2.5 h-2.5 rounded-[1px]" style={{ backgroundColor: 'var(--heat-4)' }} />
         </div>
-        
-        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-          <span>0 mins</span>
-          <div className="flex gap-[3px]">
-            <div className="w-3 h-3 rounded-[1px] bg-[#1e293b]" />
-            <div className="w-3 h-3 rounded-[1px] bg-[#3b82f630]" />
-            <div className="w-3 h-3 rounded-[1px] bg-[#3b82f660]" />
-            <div className="w-3 h-3 rounded-[1px] bg-[#3b82f6a0]" />
-            <div className="w-3 h-3 rounded-[1px] bg-[#3b82f6]" />
-          </div>
-          <span>120+ mins</span>
-        </div>
+        <span>More</span>
       </div>
     </div>
   );

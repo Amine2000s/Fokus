@@ -1,86 +1,177 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:where([data-theme='midnight'], [data-theme='obsidian']));
 
-/* 1. MIDNIGHT (Modern Dark Navy) - Default */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+/* 1. MIDNIGHT — Deep, warm dark with balanced contrast */
 :root {
-  --cell-empty: #1e293b;
-  --bg-dark: #0a0e17;
-  --bg-card: #161d2a;
-  --bg-timer: #0f172a;
-  --accent-primary: #3b82f6;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --shadow-color: rgba(0, 0, 0, 0.5);
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: var(--font-main);
-  --tracking: -0.022em;
+  --background: #0c0c0e;
+  --foreground: #f5f5f5;
+  --card: #161618;
+  --card-foreground: #f5f5f5;
+  --popover: #161618;
+  --popover-foreground: #f5f5f5;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1e21;
+  --secondary-foreground: #a3a3ab;
+  --muted: #1e1e21;
+  --muted-foreground: #73737a;
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #222225;
+  --input: #222225;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+
+  --heat-1: rgba(59, 130, 246, 0.1);
+  --heat-2: rgba(59, 130, 246, 0.25);
+  --heat-3: rgba(59, 130, 246, 0.5);
+  --heat-4: #3b82f6;
+  --cell-empty: #1a1a1d;
 }
 
-/* 2. PAPER (Claude-style Warm Light) */
+/* 2. PAPER — Warm cream with soft ink */
 [data-theme='paper'] {
-  --cell-empty: #efeee8;
-  --bg-dark: #f9f8f4;
-  --bg-card: #ffffff;
-  --bg-timer: #f5f4f0;
-  --accent-primary: #ae5630;
-  --text-primary: #1a1a18;
-  --text-secondary: #6e6e66;
-  --border-subtle: #eceae0;
-  --shadow-color: rgba(0, 0, 0, 0.04);
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: 'Instrument Serif', serif; /* Only use Serif for specific headings */
-  --tracking: -0.011em;
+  --background: #f7f6f2;
+  --foreground: #1e1d1a;
+  --card: #ffffff;
+  --card-foreground: #1e1d1a;
+  --popover: #ffffff;
+  --popover-foreground: #1e1d1a;
+  --primary: #ae5630;
+  --primary-foreground: #ffffff;
+  --secondary: #edebe4;
+  --secondary-foreground: #6e6e66;
+  --muted: #edebe4;
+  --muted-foreground: #7c7c74;
+  --accent: #ae5630;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e4e2d9;
+  --input: #e4e2d9;
+  --ring: #ae5630;
+  --radius: 0.5rem;
+
+  --heat-1: rgba(174, 86, 48, 0.1);
+  --heat-2: rgba(174, 86, 48, 0.25);
+  --heat-3: rgba(174, 86, 48, 0.5);
+  --heat-4: #ae5630;
+  --cell-empty: #e4e2d9;
 }
 
-/* 3. OBSIDIAN (Premium macOS Pure Black) - THE DEFAULT */
+/* 3. OBSIDIAN — Pure black, glassmorphism, high contrast */
 [data-theme='obsidian'] {
-  --cell-empty: #1a1a1a;
-  --bg-dark: #000000;
-  --bg-card: #0a0a0a;
-  --bg-timer: #050505;
-  --accent-primary: #ffffff;
-  --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --shadow-color: rgba(0, 0, 0, 1);
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: var(--font-main);
-  --tracking: -0.035em;
+  --background: #000000;
+  --foreground: #f5f5f5;
+  --card: rgba(12, 12, 14, 0.85);
+  --card-foreground: #f5f5f5;
+  --popover: rgba(12, 12, 14, 0.95);
+  --popover-foreground: #f5f5f5;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: rgba(255, 255, 255, 0.06);
+  --secondary-foreground: #888888;
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: #666666;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: #ffffff;
+  --radius: 0.5rem;
+
+  --heat-1: rgba(255, 255, 255, 0.08);
+  --heat-2: rgba(255, 255, 255, 0.2);
+  --heat-3: rgba(255, 255, 255, 0.4);
+  --heat-4: #ffffff;
+  --cell-empty: rgba(255, 255, 255, 0.04);
 }
 
 body {
-  font-family: var(--font-main);
-  letter-spacing: var(--tracking);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'Inter', 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
-  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
-/* Specific component sharpening */
-.font-serif { font-family: var(--font-serif); }
-.shadow-fokus { box-shadow: 0 30px 60px -12px var(--shadow-color); }
-.shadow-input { box-shadow: 0 0 0 1px var(--border-subtle), 0 20px 30px -10px var(--shadow-color); }
-
-/* Obsidian Glass Effect */
-[data-theme='obsidian'] .bg-app-card {
-  background-color: rgba(10, 10, 10, 0.8) !important;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-.transition-all { transition-duration: 300ms; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
 
-/* Base Utilities */
-* { -webkit-tap-highlight-color: transparent; }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; }
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
 
-.bg-app-dark { background-color: var(--bg-dark); }
-.bg-app-card { background-color: var(--bg-card); }
-.text-app-primary { color: var(--text-primary); }
-.text-app-secondary { color: var(--text-secondary); }
-.border-app-subtle { border-color: var(--border-subtle); }
-.bg-app-accent { background-color: var(--accent-primary); }
-.text-app-accent { color: var(--accent-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}

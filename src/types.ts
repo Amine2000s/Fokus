@@ -10,8 +10,11 @@ export interface Task {
   id: string;
   activityId: string;
   title: string;
+  description: string;
   completed: boolean;
   createdAt: string;
+  board: 'todo' | 'in-progress' | 'done';
+  sortOrder: number;
 }
 
 export interface FocusSession {
